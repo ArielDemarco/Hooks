@@ -1,0 +1,59 @@
+name: Auto PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  format-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const branch = pr.head.ref;
+
+            // Match branch: type/EMBR-1234-slug
+            const m = branch.match(/^([^/]+)\/(EMBR-\d+)(?:[-_].*)?$/i);
+            if (!m) {
+              core.info(`Branch "${branch}" no matchea el patrón esperado, skip.`);
+              return;
+            }
+
+            const typeKey = m[1].toLowerCase();
+            const ticket  = m[2].toUpperCase();
+
+            const TYPE_MAP = {
+              feature: "Feature", feat: "Feature",
+              fix: "Fix", hotfix: "Fix", quickfix: "Fix", patch: "Fix",
+              bug: "Bug", bugfix: "Bug",
+              experiment: "Experiment", exp: "Experiment",
+              chore: "Chore", maintenance: "Chore", maint: "Chore",
+              docs: "Docs", doc: "Docs",
+              refactor: "Refactor", refac: "Refactor"
+            };
+
+            const Type = TYPE_MAP[typeKey];
+            if (!Type) {
+              core.info(`Tipo desconocido "${typeKey}", skip.`);
+              return;
+            }
+
+            const desiredPrefix = `[${ticket}] ${Type}: `;
+
+            if (!pr.title.startsWith(desiredPrefix)) {
+              const newTitle = desiredPrefix + pr.title;
+              core.info(`Actualizando PR title → ${newTitle}`);
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                title: newTitle
+              });
+            } else {
+              core.info("PR title ya tiene el prefijo correcto.");
+            }
