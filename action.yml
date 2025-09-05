@@ -80,7 +80,7 @@ runs:
           const Type = TYPE_MAP[typeKey];
           if (!Type) {
             const availableTypes = Object.keys(TYPE_MAP).join(', ');
-            const comment = '❌ **Unknown Branch Type**\n\nThe branch type `' + typeKey + '` is not recognized.\n\n**Available types:** ' + availableTypes + '\n\nPlease rename your branch to use one of the supported types.';
+            const comment = '💡 **New Branch Type Detected**\n\nThe branch type `' + typeKey + '` is not currently configured in this action.\n\n**Available types:** ' + availableTypes + '\n\n**Want to add this type?** You can configure the action to support `' + typeKey + '` by adding it to the `additional_types` parameter:\n\n```yaml\n- uses: your-org/this-action@main\n  with:\n    additional_types: \'{"' + typeKey + '": "' + typeKey.charAt(0).toUpperCase() + typeKey.slice(1) + '"}\'\n```\n\n**Or combine with existing types:**\n```yaml\nadditional_types: \'{"' + typeKey + '": "' + typeKey.charAt(0).toUpperCase() + typeKey.slice(1) + '", "perf": "Performance"}\'\n```\n\nAlternatively, you can rename your branch to use one of the existing types.';
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
