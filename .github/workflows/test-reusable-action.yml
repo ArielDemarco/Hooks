@@ -17,4 +17,4 @@ jobs:
       - name: Use local action
         uses: ./
         with:
-          additional_types: '{"perf": "Performance", "test": "Test", "ci": "CI"}'
+          additional_types: '{"perf": "Performance", "test": "Test", "ci": "CI", "new_thingy": "NEW"}'
