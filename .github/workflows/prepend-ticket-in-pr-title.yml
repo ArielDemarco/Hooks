@@ -17,17 +17,11 @@ jobs:
             const pr = context.payload.pull_request;
             const branch = pr.head.ref;
 
-            // Match branch: type/EMBR-1234-slug
-            const m = branch.match(/^([^/]+)\/(EMBR-\d+)(?:[-_].*)?$/i);
-            if (!m) {
-              core.info(`Branch "${branch}" no matchea el patrón esperado, skip.`);
-              return;
-            }
+            // Parse additional types (hardcoded for testing)
+            const additionalTypes = {"perf": "Performance", "test": "Test"};
 
-            const typeKey = m[1].toLowerCase();
-            const ticket  = m[2].toUpperCase();
-
-            const TYPE_MAP = {
+            // Default type mapping
+            const DEFAULT_TYPES = {
               feature: "Feature", feat: "Feature",
               fix: "Fix", hotfix: "Fix", quickfix: "Fix", patch: "Fix",
               bug: "Bug", bugfix: "Bug",
@@ -37,9 +31,69 @@ jobs:
               refactor: "Refactor", refac: "Refactor"
             };
 
+            // Merge default and additional types
+            const TYPE_MAP = { ...DEFAULT_TYPES, ...additionalTypes };
+
+            // Special handling for release branches
+            if (branch.startsWith('release/')) {
+              const comment = `🚀 **Release Branch Detected**
+
+            This PR appears to be from a release branch (\`${branch}\`). Please ensure this is intentional and follows your release process.`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: comment
+              });
+              return;
+            }
+
+            // Match branch: type/EMBR-1234-slug
+            const m = branch.match(/^([^/]+)\/(EMBR-\d+)(?:[-_].*)?$/i);
+            if (!m) {
+              const availableTypes = Object.keys(TYPE_MAP).join(', ');
+              const comment = `⚠️ **Branch Naming Issue**
+
+            The branch \`${branch}\` doesn't match the expected pattern: \`type/EMBR-XXXX-description\`
+
+            **Expected format:** \`type/EMBR-1234-your-feature-description\`
+            **Available types:** ${availableTypes}
+
+            **Examples:**
+            - \`feature/EMBR-1234-new-login-form\`
+            - \`fix/EMBR-5678-authentication-bug\`
+            - \`docs/EMBR-9999-update-readme\``;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: comment
+              });
+              return;
+            }
+
+            const typeKey = m[1].toLowerCase();
+            const ticket  = m[2].toUpperCase();
+
             const Type = TYPE_MAP[typeKey];
             if (!Type) {
-              core.info(`Tipo desconocido "${typeKey}", skip.`);
+              const availableTypes = Object.keys(TYPE_MAP).join(', ');
+              const comment = `❌ **Unknown Branch Type**
+
+            The branch type \`${typeKey}\` is not recognized.
+
+            **Available types:** ${availableTypes}
+
+            Please rename your branch to use one of the supported types.`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: comment
+              });
               return;
             }
 
