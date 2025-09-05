@@ -1,0 +1,20 @@
+name: Test Reusable Action
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Use local action
+        uses: ./
+        with:
+          additional_types: '{"perf": "Performance", "test": "Test", "ci": "CI", "new-type": "NEW"}'
