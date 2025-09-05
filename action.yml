@@ -88,6 +88,18 @@ runs:
             ].join('\n');
             
             await updateOrCreateComment(comment, '**Release Branch Detected**');
+            
+            // Add Release: prefix to title if not present
+            if (!pr.title.startsWith('Release: ')) {
+              const newTitle = 'Release: ' + pr.title;
+              core.info('Adding Release prefix to PR title → ' + newTitle);
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                title: newTitle
+              });
+            }
             return;
           }
 
