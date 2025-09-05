@@ -32,6 +32,38 @@ runs:
             core.warning('Invalid additional_types JSON, using empty object');
           }
 
+          // Helper function to find and update or create comment
+          async function updateOrCreateComment(commentBody, commentType) {
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number
+            });
+            
+            const botComments = comments.data.filter(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes(commentType)
+            );
+            
+            if (botComments.length > 0) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComments[0].id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: commentBody
+              });
+            }
+          }
+
           // Default type mapping
           const DEFAULT_TYPES = {
             feature: "Feature", feat: "Feature",
@@ -48,14 +80,14 @@ runs:
 
           // Special handling for release branches
           if (branch.startsWith('release/')) {
-            const comment = '🚀 **Release Branch Detected**\n\nThis PR appears to be from a release branch (`' + branch + '`). Please ensure this is intentional and follows your release process.';
+            const comment = [
+              '🚀 **Release Branch Detected**',
+              '',
+              'This PR appears to be from a release branch (`' + branch + '`).',
+              'Please ensure this is intentional and follows your release process.'
+            ].join('\n');
             
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              body: comment
-            });
+            await updateOrCreateComment(comment, '**Release Branch Detected**');
             return;
           }
 
@@ -63,14 +95,21 @@ runs:
           const m = branch.match(/^([^/]+)\/(EMBR-\d+)(?:[-_].*)?$/i);
           if (!m) {
             const availableTypes = Object.keys(TYPE_MAP).join(', ');
-            const comment = '⚠️ **Branch Naming Issue**\n\nThe branch `' + branch + '` doesn\'t match the expected pattern: `type/EMBR-XXXX-description`\n\n**Expected format:** `type/EMBR-1234-your-feature-description`\n**Available types:** ' + availableTypes + '\n\n**Examples:**\n- `feature/EMBR-1234-new-login-form`\n- `fix/EMBR-5678-authentication-bug`\n- `docs/EMBR-9999-update-readme`';
+            const comment = [
+              '⚠️ **Branch Naming Issue**',
+              '',
+              'The branch `' + branch + '` doesn\'t match the expected pattern: `type/EMBR-XXXX-description`',
+              '',
+              '**Expected format:** `type/EMBR-1234-your-feature-description`',
+              '**Available types:** ' + availableTypes,
+              '',
+              '**Examples:**',
+              '- `feature/EMBR-1234-new-login-form`',
+              '- `fix/EMBR-5678-authentication-bug`',
+              '- `docs/EMBR-9999-update-readme`'
+            ].join('\n');
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              body: comment
-            });
+            await updateOrCreateComment(comment, '**Branch Naming Issue**');
             return;
           }
 
@@ -80,14 +119,30 @@ runs:
           const Type = TYPE_MAP[typeKey];
           if (!Type) {
             const availableTypes = Object.keys(TYPE_MAP).join(', ');
-            const comment = '💡 **New Branch Type Detected**\n\nThe branch type `' + typeKey + '` is not currently configured in this action.\n\n**Available types:** ' + availableTypes + '\n\n**Want to add this type?** You can configure the action to support `' + typeKey + '` by adding it to the `additional_types` parameter:\n\n```yaml\n- uses: your-org/this-action@main\n  with:\n    additional_types: \'{"' + typeKey + '": "' + typeKey.charAt(0).toUpperCase() + typeKey.slice(1) + '"}\'\n```\n\n**Or combine with existing types:**\n```yaml\nadditional_types: \'{"' + typeKey + '": "' + typeKey.charAt(0).toUpperCase() + typeKey.slice(1) + '", "perf": "Performance"}\'\n```\n\nAlternatively, you can rename your branch to use one of the existing types.';
+            const comment = [
+              '💡 **New Branch Type Detected**',
+              '',
+              'The branch type `' + typeKey + '` is not currently configured in this action.',
+              '',
+              '**Available types:** ' + availableTypes,
+              '',
+              '**Want to add this type?** You can configure the action to support `' + typeKey + '` by adding it to the `additional_types` parameter:',
+              '',
+              '```yaml',
+              '- uses: embrace-io/embrace-pr-title@v1 # Use the correct version',
+              '  with:',
+              '    additional_types: \'{"' + typeKey + '": "' + typeKey.charAt(0).toUpperCase() + typeKey.slice(1) + '"}\'',
+              '```',
+              '',
+              '**Or combine with existing types:**',
+              '```yaml',
+              'additional_types: \'{"' + typeKey + '": "' + typeKey.charAt(0).toUpperCase() + typeKey.slice(1) + '", "perf": "Performance"}\'',
+              '```',
+              '',
+              'Alternatively, you can rename your branch to use one of the existing types.'
+            ].join('\n');
 
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              body: comment
-            });
+            await updateOrCreateComment(comment, '**New Branch Type Detected**');
             return;
           }
 
