@@ -27,9 +27,9 @@ runs:
           // Parse additional types
           let additionalTypes = {};
           try {
-            additionalTypes = JSON.parse('${{ inputs.additional_types }}');
+            additionalTypes = JSON.parse(`${{ inputs.additional_types }}`);
           } catch (e) {
-            core.warning('Invalid additional_types JSON, using empty object');
+            core.warning(`Invalid additional_types JSON, using empty object`);
           }
 
           // Default type mapping
