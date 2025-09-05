@@ -48,9 +48,7 @@ runs:
 
           // Special handling for release branches
           if (branch.startsWith('release/')) {
-            const comment = `🚀 **Release Branch Detected**
-
-This PR appears to be from a release branch (\`${branch}\`). Please ensure this is intentional and follows your release process.`;
+            const comment = '🚀 **Release Branch Detected**\n\nThis PR appears to be from a release branch (`' + branch + '`). Please ensure this is intentional and follows your release process.';
             
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -65,17 +63,7 @@ This PR appears to be from a release branch (\`${branch}\`). Please ensure this 
           const m = branch.match(/^([^/]+)\/(EMBR-\d+)(?:[-_].*)?$/i);
           if (!m) {
             const availableTypes = Object.keys(TYPE_MAP).join(', ');
-            const comment = `⚠️ **Branch Naming Issue**
-
-The branch \`${branch}\` doesn't match the expected pattern: \`type/EMBR-XXXX-description\`
-
-**Expected format:** \`type/EMBR-1234-your-feature-description\`
-**Available types:** ${availableTypes}
-
-**Examples:**
-- \`feature/EMBR-1234-new-login-form\`
-- \`fix/EMBR-5678-authentication-bug\`
-- \`docs/EMBR-9999-update-readme\``;
+            const comment = '⚠️ **Branch Naming Issue**\n\nThe branch `' + branch + '` doesn\'t match the expected pattern: `type/EMBR-XXXX-description`\n\n**Expected format:** `type/EMBR-1234-your-feature-description`\n**Available types:** ' + availableTypes + '\n\n**Examples:**\n- `feature/EMBR-1234-new-login-form`\n- `fix/EMBR-5678-authentication-bug`\n- `docs/EMBR-9999-update-readme`';
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -92,13 +80,7 @@ The branch \`${branch}\` doesn't match the expected pattern: \`type/EMBR-XXXX-de
           const Type = TYPE_MAP[typeKey];
           if (!Type) {
             const availableTypes = Object.keys(TYPE_MAP).join(', ');
-            const comment = `❌ **Unknown Branch Type**
-
-The branch type \`${typeKey}\` is not recognized.
-
-**Available types:** ${availableTypes}
-
-Please rename your branch to use one of the supported types.`;
+            const comment = '❌ **Unknown Branch Type**\n\nThe branch type `' + typeKey + '` is not recognized.\n\n**Available types:** ' + availableTypes + '\n\nPlease rename your branch to use one of the supported types.';
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -109,11 +91,11 @@ Please rename your branch to use one of the supported types.`;
             return;
           }
 
-          const desiredPrefix = `[${ticket}] ${Type}: `;
+          const desiredPrefix = '[' + ticket + '] ' + Type + ': ';
 
           if (!pr.title.startsWith(desiredPrefix)) {
             const newTitle = desiredPrefix + pr.title;
-            core.info(`Actualizando PR title → ${newTitle}`);
+            core.info('Actualizando PR title → ' + newTitle);
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
